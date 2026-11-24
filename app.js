@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
     calcMode: 'money_to_liters', // 'money_to_liters' | 'liters_to_money' | 'full_tank'
     editingStationId: null,
     editingFuelTypeId: null,
+    selectedMonthKey: null,
     charts: {
       monthly: null,
       fuelShare: null
@@ -92,6 +93,24 @@ document.addEventListener('DOMContentLoaded', () => {
     btnEmptyAddSample: document.getElementById('btnEmptyAddSample'),
     btnClearLogs: document.getElementById('btnClearLogs'),
 
+    // Monthly View DOM
+    monthChipsContainer: document.getElementById('monthChipsContainer'),
+    selectedMonthBadgeMoney: document.getElementById('selectedMonthBadgeMoney'),
+    selectedMonthBadgeLiters: document.getElementById('selectedMonthBadgeLiters'),
+    monthlyTotalSpent: document.getElementById('monthlyTotalSpent'),
+    monthlySpentDiff: document.getElementById('monthlySpentDiff'),
+    monthlyTotalLiters: document.getElementById('monthlyTotalLiters'),
+    monthlyLitersDiff: document.getElementById('monthlyLitersDiff'),
+    monthlyAvgPrice: document.getElementById('monthlyAvgPrice'),
+    monthlyAvgSubtext: document.getElementById('monthlyAvgSubtext'),
+    monthlyFillCountBadge: document.getElementById('monthlyFillCountBadge'),
+    monthlyAvgPerFill: document.getElementById('monthlyAvgPerFill'),
+    monthlyFillSubtext: document.getElementById('monthlyFillSubtext'),
+    monthlyFuelBreakdownList: document.getElementById('monthlyFuelBreakdownList'),
+    monthlyStationBreakdownList: document.getElementById('monthlyStationBreakdownList'),
+    allMonthsTableBody: document.getElementById('allMonthsTableBody'),
+    mobileMonthlyCardsList: document.getElementById('mobileMonthlyCardsList'),
+
     // Modals & Toast
     editPriceModal: document.getElementById('editPriceModal'),
     editPriceModalTitle: document.getElementById('editPriceModalTitle'),
@@ -125,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateKPIDisplay();
     renderLogs();
     renderBreakdowns();
+    renderMonthlyView();
 
     // Trigger background fetch for live prices
     refreshRealtimePrices();
@@ -159,6 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
       dom.viewSections.forEach(section => {
         section.classList.toggle('active', section.id === tabId);
       });
+
+      // If switching to monthly view, render monthly breakdown
+      if (tabId === 'tab-monthly') {
+        renderMonthlyView();
+      }
 
       // If switching to analytics, re-render charts
       if (tabId === 'tab-analytics') {
@@ -670,6 +695,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateKPIDisplay();
     renderLogs();
     renderBreakdowns();
+    renderMonthlyView();
     if (state.activeTab === 'tab-analytics') {
       renderAnalyticsCharts();
     }
@@ -835,9 +861,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (window.innerWidth >= 768) {
         dom.logsTableBody.closest('.data-table-responsive').style.display = 'block';
         dom.mobileLogsList.style.display = 'none';
+        if (dom.allMonthsTableBody) {
+          dom.allMonthsTableBody.closest('.data-table-responsive').style.display = 'block';
+          dom.mobileMonthlyCardsList.style.display = 'none';
+        }
       } else {
         dom.logsTableBody.closest('.data-table-responsive').style.display = 'none';
         dom.mobileLogsList.style.display = 'flex';
+        if (dom.allMonthsTableBody) {
+          dom.allMonthsTableBody.closest('.data-table-responsive').style.display = 'none';
+          dom.mobileMonthlyCardsList.style.display = 'flex';
+        }
       }
     }
   });
@@ -899,6 +933,218 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
       stationList.appendChild(div);
     });
+  }
+
+  // =========================================================================
+  // 5.5 Monthly Breakdown & Monthly Accumulator Engine
+  // =========================================================================
+
+  function renderMonthlyView() {
+    const monthlyStats = window.fuelStorageManager.getMonthlyDetailedStats();
+    const chipsContainer = dom.monthChipsContainer;
+    chipsContainer.innerHTML = '';
+
+    if (monthlyStats.length === 0) {
+      chipsContainer.innerHTML = '<span style="color: var(--text-muted); font-size: 0.8rem; padding: 4px 0;">ยังไม่มีข้อมูลประวัติการเติม</span>';
+      dom.selectedMonthBadgeMoney.textContent = 'ไม่มีข้อมูล';
+      dom.selectedMonthBadgeLiters.textContent = 'ไม่มีข้อมูล';
+      dom.monthlyTotalSpent.textContent = '0.00';
+      dom.monthlyTotalLiters.textContent = '0.000';
+      dom.monthlyAvgPrice.textContent = '0.00';
+      dom.monthlyAvgPerFill.textContent = '0.00';
+      dom.monthlySpentDiff.innerHTML = '<span>เทียบเดือนก่อนหน้า: -</span>';
+      dom.monthlyLitersDiff.innerHTML = '<span>เทียบเดือนก่อนหน้า: -</span>';
+      dom.monthlyFuelBreakdownList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem;">ยังไม่มีข้อมูล</div>';
+      dom.monthlyStationBreakdownList.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem;">ยังไม่มีข้อมูล</div>';
+      dom.allMonthsTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 20px;">ยังไม่มีข้อมูลสรุปรายเดือน</td></tr>';
+      dom.mobileMonthlyCardsList.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 16px;">ยังไม่มีข้อมูลสรุปรายเดือน</div>';
+      return;
+    }
+
+    // Set default selected month if not set or invalid
+    if (!state.selectedMonthKey || !monthlyStats.some(m => m.monthKey === state.selectedMonthKey)) {
+      state.selectedMonthKey = monthlyStats[0].monthKey;
+    }
+
+    // Render month selector chips
+    monthlyStats.forEach(m => {
+      const chip = document.createElement('button');
+      chip.className = `month-chip ${m.monthKey === state.selectedMonthKey ? 'active' : ''}`;
+      chip.innerHTML = `<span>📅 ${m.monthName}</span>`;
+      chip.addEventListener('click', () => {
+        state.selectedMonthKey = m.monthKey;
+        renderMonthlyView();
+      });
+      chipsContainer.appendChild(chip);
+    });
+
+    // Find currently selected month
+    const cur = monthlyStats.find(m => m.monthKey === state.selectedMonthKey) || monthlyStats[0];
+
+    // Update KPIs for selected month (Separate Money and Liters clearly)
+    dom.selectedMonthBadgeMoney.textContent = cur.shortName;
+    dom.selectedMonthBadgeLiters.textContent = cur.shortName;
+    dom.monthlyTotalSpent.textContent = formatMoney(cur.totalAmount);
+    dom.monthlyTotalLiters.textContent = cur.totalLiters.toFixed(3);
+    dom.monthlyAvgPrice.textContent = cur.avgPrice.toFixed(2);
+    dom.monthlyAvgSubtext.textContent = `คิดจาก ฿${formatMoney(cur.totalAmount)} ÷ ${cur.totalLiters.toFixed(2)} L`;
+    dom.monthlyFillCountBadge.textContent = `${cur.count} ครั้ง`;
+    dom.monthlyAvgPerFill.textContent = formatMoney(cur.avgPerFill);
+    dom.monthlyFillSubtext.textContent = `เฉลี่ย ${cur.avgLitersPerFill.toFixed(2)} ลิตร / ครั้ง`;
+
+    // Comparisons with previous month
+    if (cur.comparison && cur.comparison.hasPrev) {
+      const amtDiff = cur.comparison.amountDiff;
+      const amtPct = cur.comparison.amountDiffPct;
+      const litDiff = cur.comparison.litersDiff;
+      const litPct = cur.comparison.litersDiffPct;
+
+      if (amtDiff > 0) {
+        dom.monthlySpentDiff.innerHTML = `<span class="diff-badge-up">🔺 จ่ายเพิ่มขึ้น ฿${formatMoney(amtDiff)} (+${amtPct}%)</span>`;
+      } else if (amtDiff < 0) {
+        dom.monthlySpentDiff.innerHTML = `<span class="diff-badge-down">🔻 ประหยัดลง ฿${formatMoney(Math.abs(amtDiff))} (${amtPct}%)</span>`;
+      } else {
+        dom.monthlySpentDiff.innerHTML = `<span class="diff-badge-neutral">➖ ยอดเท่ากับเดือนก่อน</span>`;
+      }
+
+      if (litDiff > 0) {
+        dom.monthlyLitersDiff.innerHTML = `<span class="diff-badge-up">🔺 ใช้น้ำมันเพิ่ม ${litDiff.toFixed(2)} L (+${litPct}%)</span>`;
+      } else if (litDiff < 0) {
+        dom.monthlyLitersDiff.innerHTML = `<span class="diff-badge-down">🔻 ใช้น้ำมันลดลง ${Math.abs(litDiff).toFixed(2)} L (${litPct}%)</span>`;
+      } else {
+        dom.monthlyLitersDiff.innerHTML = `<span class="diff-badge-neutral">➖ ปริมาณเท่ากับเดือนก่อน</span>`;
+      }
+    } else {
+      dom.monthlySpentDiff.innerHTML = `<span class="diff-badge-neutral">เดือนแรกที่มีการบันทึก</span>`;
+      dom.monthlyLitersDiff.innerHTML = `<span class="diff-badge-neutral">เดือนแรกที่มีการบันทึก</span>`;
+    }
+
+    // Render Fuel Breakdown for this month
+    const fuelList = dom.monthlyFuelBreakdownList;
+    fuelList.innerHTML = '';
+    Object.keys(cur.byFuelType).forEach(fuelKey => {
+      const item = cur.byFuelType[fuelKey];
+      const fuel = window.fuelDataManager.fuelTypes[fuelKey] || { nameTh: fuelKey, color: '#38bdf8' };
+      const pct = cur.totalAmount > 0 ? (item.totalAmount / cur.totalAmount * 100) : 0;
+
+      const div = document.createElement('div');
+      div.className = 'progress-item';
+      div.innerHTML = `
+        <div class="progress-item-header">
+          <span style="font-weight: 600; color: #fff;">${fuel.nameTh} (${item.count} ครั้ง)</span>
+          <span style="color: var(--text-secondary); font-family: var(--font-mono);">
+            ${item.totalLiters.toFixed(2)} L • <strong style="color: #34d399;">฿${formatMoney(item.totalAmount)}</strong> (${pct.toFixed(1)}%)
+          </span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: ${pct}%; background-color: ${fuel.color};"></div>
+        </div>
+      `;
+      fuelList.appendChild(div);
+    });
+
+    // Render Station Breakdown for this month
+    const stList = dom.monthlyStationBreakdownList;
+    stList.innerHTML = '';
+    Object.keys(cur.byStation).forEach(stKey => {
+      const item = cur.byStation[stKey];
+      const station = window.fuelDataManager.stations[stKey] || { shortName: stKey, brandColor: '#0284c7' };
+      const pct = cur.totalAmount > 0 ? (item.totalAmount / cur.totalAmount * 100) : 0;
+
+      const div = document.createElement('div');
+      div.className = 'progress-item';
+      div.innerHTML = `
+        <div class="progress-item-header">
+          <span style="font-weight: 600; color: #fff;">${station.shortName} (${item.count} ครั้ง)</span>
+          <span style="color: var(--text-secondary); font-family: var(--font-mono);">
+            ${item.totalLiters.toFixed(2)} L • <strong style="color: #34d399;">฿${formatMoney(item.totalAmount)}</strong> (${pct.toFixed(1)}%)
+          </span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill" style="width: ${pct}%; background-color: ${station.brandColor};"></div>
+        </div>
+      `;
+      stList.appendChild(div);
+    });
+
+    // Render All-Months Comparison Table and Mobile Cards
+    const tbody = dom.allMonthsTableBody;
+    const mobileCards = dom.mobileMonthlyCardsList;
+    tbody.innerHTML = '';
+    mobileCards.innerHTML = '';
+
+    monthlyStats.forEach(m => {
+      let diffHtml = '<span style="color: var(--text-muted);">-</span>';
+      if (m.comparison && m.comparison.hasPrev) {
+        const amtDiff = m.comparison.amountDiff;
+        const amtPct = m.comparison.amountDiffPct;
+        diffHtml = amtDiff >= 0
+          ? `<span class="diff-badge-up">+฿${formatMoney(amtDiff)} (+${amtPct}%)</span>`
+          : `<span class="diff-badge-down">-฿${formatMoney(Math.abs(amtDiff))} (${amtPct}%)</span>`;
+      }
+
+      const isCurrentSelected = m.monthKey === state.selectedMonthKey;
+      const tr = document.createElement('tr');
+      if (isCurrentSelected) {
+        tr.style.backgroundColor = 'rgba(56, 189, 248, 0.08)';
+      }
+
+      tr.innerHTML = `
+        <td>
+          <div style="font-weight: 700; color: #fff;">${m.monthName}</div>
+          <div style="font-size: 0.72rem; color: var(--text-muted);">${m.year + 543}</div>
+        </td>
+        <td class="cell-money">฿${formatMoney(m.totalAmount)}</td>
+        <td class="cell-liters">${m.totalLiters.toFixed(3)} L</td>
+        <td style="font-family: var(--font-mono);">${m.avgPrice.toFixed(2)} ฿/L</td>
+        <td>${m.count} ครั้ง</td>
+        <td style="font-family: var(--font-mono); color: var(--text-secondary);">฿${formatMoney(m.avgPerFill)}</td>
+        <td>${diffHtml}</td>
+      `;
+      tbody.appendChild(tr);
+
+      // Mobile card for each month
+      const card = document.createElement('div');
+      card.className = 'mobile-log-card';
+      if (isCurrentSelected) {
+        card.style.borderColor = 'var(--accent-cyan)';
+      }
+
+      card.innerHTML = `
+        <div class="mobile-card-header">
+          <span style="font-weight: 700; color: #fff; font-size: 0.95rem;">📅 ${m.monthName}</span>
+          <span style="font-size: 0.72rem; color: var(--text-secondary);">${m.count} ครั้ง</span>
+        </div>
+        <div class="mobile-card-metrics">
+          <div class="mobile-metric-item">
+            <span class="mobile-metric-label">ยอดเงินรวม</span>
+            <span class="mobile-metric-val" style="color: #34d399;">฿${formatMoney(m.totalAmount)}</span>
+          </div>
+          <div class="mobile-metric-item">
+            <span class="mobile-metric-label">ปริมาณน้ำมันรวม</span>
+            <span class="mobile-metric-val" style="color: #38bdf8;">${m.totalLiters.toFixed(3)} L</span>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px;">
+          <span>ราคาเฉลี่ย: ฿${m.avgPrice.toFixed(2)}/L</span>
+          <span>${diffHtml}</span>
+        </div>
+      `;
+      card.addEventListener('click', () => {
+        state.selectedMonthKey = m.monthKey;
+        renderMonthlyView();
+      });
+      mobileCards.appendChild(card);
+    });
+
+    // Responsive toggle between table and mobile cards
+    if (window.innerWidth >= 768) {
+      dom.allMonthsTableBody.closest('.data-table-responsive').style.display = 'block';
+      dom.mobileMonthlyCardsList.style.display = 'none';
+    } else {
+      dom.allMonthsTableBody.closest('.data-table-responsive').style.display = 'none';
+      dom.mobileMonthlyCardsList.style.display = 'flex';
+    }
   }
 
   // =========================================================================

@@ -58,6 +58,11 @@
           </button>
         </li>
         <li>
+          <button class="nav-tab-btn" data-tab="tab-monthly">
+            <span>📅</span> สรุปแยกรายเดือน
+          </button>
+        </li>
+        <li>
           <button class="nav-tab-btn" data-tab="tab-logs">
             <span>📋</span> ยอดสะสม & ประวัติการเติม
           </button>
@@ -81,9 +86,13 @@
       <span class="icon">🧮</span>
       <span>คำนวณ</span>
     </button>
+    <button class="mobile-nav-btn" data-tab="tab-monthly">
+      <span class="icon">📅</span>
+      <span>รายเดือน</span>
+    </button>
     <button class="mobile-nav-btn" data-tab="tab-logs">
       <span class="icon">📋</span>
-      <span>สะสม & ประวัติ</span>
+      <span>ประวัติ</span>
     </button>
     <button class="mobile-nav-btn" data-tab="tab-analytics">
       <span class="icon">📊</span>
@@ -431,6 +440,150 @@
               <span>💾</span> บันทึกลงระบบสะสมและประวัติ
             </button>
           </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW: MONTHLY ACCUMULATOR (สรุปแยกการใช้น้ำมันและยอดเงินรายเดือน)
+         ===================================================================== -->
+    <section class="view-section" id="tab-monthly">
+      <div class="section-intro">
+        <div>
+          <h2><span>📅</span> บันทึกและสรุปแยกการใช้น้ำมันและยอดเงินรายเดือน</h2>
+          <p>แสดงยอดเงินรวมค่าน้ำมัน (บาท) และปริมาณการใช้น้ำมัน (ลิตร) แยกชัดเจนในแต่ละเดือน พร้อมเปรียบเทียบการเปลี่ยนแปลง</p>
+        </div>
+      </div>
+
+      <!-- Month Selector Bar -->
+      <div class="monthly-selector-box">
+        <label class="monthly-selector-label">เลือกเดือนที่ต้องการดูข้อมูล:</label>
+        <div class="month-chips-scroll" id="monthChipsContainer">
+          <!-- Dynamically populated month chips -->
+        </div>
+      </div>
+
+      <!-- Monthly Grand KPI Highlights (แยกเงินและลิตรในเดือนที่เลือกอย่างชัดเจน) -->
+      <div class="kpi-grid monthly-kpi-grid" style="margin-bottom: 20px;">
+        <!-- Monthly Money -->
+        <div class="kpi-card card-money">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>💳</span> ยอดเงินค่าน้ำมันประจำเดือน
+            </span>
+            <span class="kpi-badge" id="selectedMonthBadgeMoney">เดือนนี้</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyTotalSpent">0.00</span>
+            <span class="kpi-unit">บาท</span>
+          </div>
+          <div class="kpi-subtext" id="monthlySpentDiff">
+            <span>เทียบเดือนก่อนหน้า: -</span>
+          </div>
+        </div>
+
+        <!-- Monthly Liters -->
+        <div class="kpi-card card-liters">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>🛢️</span> ปริมาณน้ำมันที่ใช้ประจำเดือน
+            </span>
+            <span class="kpi-badge" id="selectedMonthBadgeLiters">เดือนนี้</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyTotalLiters">0.000</span>
+            <span class="kpi-unit">ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="monthlyLitersDiff">
+            <span>เทียบเดือนก่อนหน้า: -</span>
+          </div>
+        </div>
+
+        <!-- Monthly Avg Price & Fills -->
+        <div class="kpi-card card-avg">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>⚖️</span> ราคาเฉลี่ยในเดือนนี้
+            </span>
+            <span class="kpi-badge">฿/ลิตร</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyAvgPrice">0.00</span>
+            <span class="kpi-unit">฿/ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="monthlyAvgSubtext">
+            <span>คิดจากยอดเงินและลิตรจริง</span>
+          </div>
+        </div>
+
+        <!-- Monthly Fill Count -->
+        <div class="kpi-card card-stats">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>⛽</span> ความถี่การเติมประจำเดือน
+            </span>
+            <span class="kpi-badge" id="monthlyFillCountBadge">0 ครั้ง</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyAvgPerFill">0.00</span>
+            <span class="kpi-unit">฿/ครั้ง</span>
+          </div>
+          <div class="kpi-subtext" id="monthlyFillSubtext">
+            <span>เฉลี่ย 0.00 ลิตร/ครั้ง</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Fuel Breakdown (สัดส่วนน้ำมันที่เติมในเดือนนี้) -->
+      <div class="breakdown-grid" style="margin-top: 0; margin-bottom: 24px;">
+        <div class="breakdown-card">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 12px;">
+            <span>🛢️</span> สัดส่วนชนิดน้ำมันที่เติมในเดือนที่เลือก
+          </h3>
+          <div class="progress-list" id="monthlyFuelBreakdownList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+        <div class="breakdown-card">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: #fff; margin-bottom: 12px;">
+            <span>⛽</span> ปั๊มน้ำมันที่เข้าใช้บริการในเดือนที่เลือก
+          </h3>
+          <div class="progress-list" id="monthlyStationBreakdownList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- All-Months Comparison Table (สรุปเปรียบเทียบทุกเดือนย้อนหลัง) -->
+      <div class="logs-card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+            <span>📊</span> ตารางสรุปแยกยอดเงินและปริมาณลิตรทุกเดือน
+          </h3>
+        </div>
+
+        <div class="data-table-responsive">
+          <table class="logs-table" id="allMonthsTable">
+            <thead>
+              <tr>
+                <th>ประจำเดือน</th>
+                <th>ยอดเงินรวม (บาท)</th>
+                <th>ปริมาณรวม (ลิตร)</th>
+                <th>ราคาเฉลี่ย</th>
+                <th>จำนวนครั้ง</th>
+                <th>เฉลี่ยต่อครั้ง</th>
+                <th>เปรียบเทียบเดือนก่อน</th>
+              </tr>
+            </thead>
+            <tbody id="allMonthsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Monthly Cards -->
+        <div class="mobile-logs-list" id="mobileMonthlyCardsList">
+          <!-- Dynamically populated for mobile -->
         </div>
       </div>
     </section>

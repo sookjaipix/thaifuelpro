@@ -215,6 +215,114 @@ class FuelStorageManager {
     };
   }
 
+  /**
+   * Generates detailed monthly report separating total fuel usage (Liters)
+   * and total expenses (THB) for each month, with month-over-month comparison.
+   */
+  getMonthlyDetailedStats() {
+    const monthlyMap = {};
+    const thaiMonthNames = [
+      'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+      'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+    ];
+
+    this.logs.forEach(log => {
+      const d = new Date(log.date);
+      const year = d.getFullYear();
+      const month = d.getMonth() + 1;
+      const monthKey = `${year}-${String(month).padStart(2, '0')}`;
+
+      if (!monthlyMap[monthKey]) {
+        const thaiYear = year + 543;
+        const monthName = `${thaiMonthNames[month - 1]} ${thaiYear}`;
+        const shortName = `${thaiMonthNames[month - 1].slice(0, 3)}. ${String(thaiYear).slice(-2)}`;
+
+        monthlyMap[monthKey] = {
+          monthKey,
+          year,
+          month,
+          monthName,
+          shortName,
+          totalAmount: 0,
+          totalLiters: 0,
+          count: 0,
+          byFuelType: {},
+          byStation: {},
+          logs: []
+        };
+      }
+
+      const m = monthlyMap[monthKey];
+      const amount = Number(log.totalAmount) || 0;
+      const liters = Number(log.totalLiters) || 0;
+
+      m.totalAmount += amount;
+      m.totalLiters += liters;
+      m.count += 1;
+      m.logs.push(log);
+
+      // By Fuel Type
+      if (!m.byFuelType[log.fuelTypeId]) {
+        m.byFuelType[log.fuelTypeId] = {
+          fuelTypeId: log.fuelTypeId,
+          totalAmount: 0,
+          totalLiters: 0,
+          count: 0
+        };
+      }
+      m.byFuelType[log.fuelTypeId].totalAmount += amount;
+      m.byFuelType[log.fuelTypeId].totalLiters += liters;
+      m.byFuelType[log.fuelTypeId].count += 1;
+
+      // By Station
+      if (!m.byStation[log.stationId]) {
+        m.byStation[log.stationId] = {
+          stationId: log.stationId,
+          totalAmount: 0,
+          totalLiters: 0,
+          count: 0
+        };
+      }
+      m.byStation[log.stationId].totalAmount += amount;
+      m.byStation[log.stationId].totalLiters += liters;
+      m.byStation[log.stationId].count += 1;
+    });
+
+    const sortedKeys = Object.keys(monthlyMap).sort().reverse();
+    const result = sortedKeys.map((key, idx) => {
+      const item = monthlyMap[key];
+      item.totalAmount = Number(item.totalAmount.toFixed(2));
+      item.totalLiters = Number(item.totalLiters.toFixed(3));
+      item.avgPrice = item.totalLiters > 0 ? Number((item.totalAmount / item.totalLiters).toFixed(2)) : 0;
+      item.avgPerFill = item.count > 0 ? Number((item.totalAmount / item.count).toFixed(2)) : 0;
+      item.avgLitersPerFill = item.count > 0 ? Number((item.totalLiters / item.count).toFixed(3)) : 0;
+
+      const prevKey = sortedKeys[idx + 1];
+      if (prevKey && monthlyMap[prevKey]) {
+        const prev = monthlyMap[prevKey];
+        const amountDiff = item.totalAmount - prev.totalAmount;
+        const amountDiffPct = prev.totalAmount > 0 ? (amountDiff / prev.totalAmount) * 100 : 0;
+        const litersDiff = item.totalLiters - prev.totalLiters;
+        const litersDiffPct = prev.totalLiters > 0 ? (litersDiff / prev.totalLiters) * 100 : 0;
+
+        item.comparison = {
+          hasPrev: true,
+          prevMonthName: prev.monthName,
+          amountDiff: Number(amountDiff.toFixed(2)),
+          amountDiffPct: Number(amountDiffPct.toFixed(1)),
+          litersDiff: Number(litersDiff.toFixed(3)),
+          litersDiffPct: Number(litersDiffPct.toFixed(1))
+        };
+      } else {
+        item.comparison = { hasPrev: false };
+      }
+
+      return item;
+    });
+
+    return result;
+  }
+
   filterLogs({ period = 'all', station = 'all', fuelType = 'all', search = '' }) {
     const now = new Date();
     return this.logs.filter(log => {

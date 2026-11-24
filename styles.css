@@ -1559,7 +1559,332 @@ body {
   margin-bottom: 6px;
 }
 
-.empty-state p {
-  font-size: 0.85rem;
-  margin-bottom: 16px;
+/* ==========================================================================
+   Monthly Accumulator Styles & Comparison Badges
+   ========================================================================== */
+.monthly-selector-box {
+  background: var(--bg-surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  margin-bottom: 20px;
 }
+
+.monthly-selector-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.month-chips-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.month-chip {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.month-chip:hover {
+  border-color: var(--border-medium);
+  color: #fff;
+}
+
+.month-chip.active {
+  background: linear-gradient(135deg, rgba(2, 132, 199, 0.3) 0%, rgba(16, 185, 129, 0.3) 100%);
+  border-color: var(--accent-cyan);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.diff-badge-up {
+  color: #fb7185;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.diff-badge-down {
+  color: #34d399;
+  font-size: 0.72rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.diff-badge-neutral {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+/* ==========================================================================
+   Mobile-First Refined Styling (Enhanced Ergonomics & Layout)
+   ========================================================================== */
+@media (max-width: 767px) {
+  /* Tighter page padding for small screens */
+  .app-container {
+    padding: 0 12px;
+  }
+
+  body {
+    padding-bottom: 74px;
+  }
+
+  /* Compact Site Header */
+  .site-header {
+    padding: 8px 0;
+  }
+
+  .brand-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    border-radius: var(--radius-sm);
+  }
+
+  .brand-info h1 {
+    font-size: 0.98rem;
+  }
+
+  .brand-info p {
+    display: none; /* Hide subtitle to keep header compact */
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .live-pill {
+    padding: 4px 8px;
+    font-size: 0.68rem;
+  }
+
+  .refresh-btn {
+    padding: 5px 8px;
+    font-size: 0.75rem;
+  }
+
+  .refresh-btn .btn-text {
+    display: none; /* Icon-only on mobile */
+  }
+
+  /* Bottom Navigation Ergonomics */
+  .mobile-nav {
+    padding: 4px 2px calc(8px + env(safe-area-inset-bottom, 0px)) 2px;
+    background: rgba(9, 13, 22, 0.98);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .mobile-nav-btn {
+    padding: 4px 2px;
+    font-size: 0.65rem;
+    gap: 2px;
+  }
+
+  .mobile-nav-btn .icon {
+    font-size: 1.15rem;
+  }
+
+  .mobile-nav-btn.active {
+    color: var(--accent-cyan);
+    font-weight: 700;
+  }
+
+  /* Hero KPI Grid on Mobile (2x2 with clean compact padding) */
+  .hero-kpi-section {
+    padding: 12px 0 12px 0;
+  }
+
+  .kpi-grid {
+    gap: 8px;
+  }
+
+  .kpi-card {
+    padding: 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .kpi-title {
+    font-size: 0.68rem;
+    gap: 4px;
+  }
+
+  .kpi-badge {
+    font-size: 0.62rem;
+    padding: 1px 5px;
+  }
+
+  .kpi-value {
+    font-size: 1.35rem;
+  }
+
+  .kpi-unit {
+    font-size: 0.75rem;
+  }
+
+  .kpi-subtext {
+    font-size: 0.68rem;
+  }
+
+  /* Section Titles */
+  .section-intro {
+    margin-bottom: 14px;
+  }
+
+  .section-intro h2 {
+    font-size: 1.15rem;
+  }
+
+  .section-intro p {
+    font-size: 0.75rem;
+  }
+
+  /* Station Pills Scroll */
+  .station-pills-scroll {
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+    gap: 6px;
+  }
+
+  .station-pill-btn {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* Filter Tag Buttons */
+  .filter-bar {
+    padding: 8px 10px;
+    margin-bottom: 14px;
+  }
+
+  .category-tags {
+    gap: 5px;
+  }
+
+  .tag-btn {
+    padding: 4px 9px;
+    font-size: 0.72rem;
+  }
+
+  /* Calculator Mobile Polish */
+  .calc-main-card, .calc-save-card {
+    padding: 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .calc-mode-switcher {
+    margin-bottom: 14px;
+  }
+
+  .mode-btn {
+    padding: 8px 4px;
+    font-size: 0.75rem;
+  }
+
+  .calc-selectors-row {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .form-control {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  .active-price-banner {
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .banner-fuel-title {
+    font-size: 0.85rem;
+  }
+
+  .banner-price-val {
+    font-size: 1.25rem;
+  }
+
+  .huge-input {
+    height: 60px;
+    font-size: 1.7rem;
+    padding: 10px 60px 10px 14px;
+  }
+
+  .presets-grid {
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .preset-chip {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .calc-result-hero {
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .result-hero-label {
+    font-size: 0.75rem;
+  }
+
+  .result-hero-number {
+    font-size: 2.1rem;
+  }
+
+  .result-hero-unit {
+    font-size: 1rem;
+  }
+
+  .result-formula-text {
+    font-size: 0.72rem;
+  }
+
+  .btn-primary-save {
+    padding: 12px 16px;
+    font-size: 0.92rem;
+  }
+
+  /* Matrix Horizontal Scrolling Indicator */
+  .matrix-container {
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-md);
+  }
+
+  .matrix-table th, .matrix-table td {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Fuel Card */
+  .fuel-price-card {
+    padding: 16px;
+  }
+
+  .price-display-huge {
+    font-size: 1.85rem;
+  }
+}
+
