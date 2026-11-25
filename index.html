@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="dark-gray">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ระบบติดตามและคำนวณราคาน้ำมันเรียลไทม์ | Thai Fuel Tracker Pro</title>
+  <meta name="description" content="เว็บแอปเช็กราคาน้ำมันเรียลไทม์ทุกปั๊ม ทุกชนิดน้ำมันในประเทศไทย พร้อมระบบคำนวณอัตโนมัติและสะสมจำนวนลิตรและยอดเงินค่าน้ำมัน">
+  <meta name="theme-color" content="#121316">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Roboto+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Chart.js for analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header class="site-header">
+    <div class="app-container">
+      <div class="header-inner">
+        <div class="brand-wrapper">
+          <div class="brand-icon">⛽</div>
+          <div class="brand-info">
+            <h1>THAI FUEL <span class="pro-badge">PRO</span></h1>
+            <p>ระบบติดตามราคาน้ำมัน & บันทึกการเติมแบบมืออาชีพ</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="live-pill" id="liveSyncStatus">
+            <span class="live-indicator"></span>
+            <span id="liveStatusText">กำลังเชื่อมต่อราคา...</span>
+          </div>
+          <button class="theme-toggle-btn" id="btnToggleTheme" title="สลับโหมด ดำ-เทา / ขาว-เทา">
+            <span id="themeToggleIcon">☀️</span>
+            <span id="themeToggleText" class="btn-text">ขาว-เทา</span>
+          </button>
+          <button class="refresh-btn" id="btnRefreshPrices" title="อัปเดตราคาใหม่ล่าสุด">
+            <span class="refresh-icon">🔄</span>
+            <span class="btn-text">รีเฟรช</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Desktop Navigation Bar -->
+  <nav class="desktop-nav">
+    <div class="app-container">
+      <ul class="nav-tabs">
+        <li>
+          <button class="nav-tab-btn active" data-tab="tab-prices">
+            <span>⛽</span> ราคาน้ำมันเรียลไทม์
+          </button>
+        </li>
+        <li>
+          <button class="nav-tab-btn" data-tab="tab-calc">
+            <span>🧮</span> เครื่องคำนวณอัจฉริยะ
+          </button>
+        </li>
+        <li>
+          <button class="nav-tab-btn" data-tab="tab-monthly">
+            <span>📅</span> สรุปแยกรายเดือน
+          </button>
+        </li>
+        <li>
+          <button class="nav-tab-btn" data-tab="tab-logs">
+            <span>📋</span> ยอดสะสม & ประวัติการเติม
+          </button>
+        </li>
+        <li>
+          <button class="nav-tab-btn" data-tab="tab-analytics">
+            <span>📊</span> กราฟวิเคราะห์สถิติ
+          </button>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Mobile Bottom Navigation Bar -->
+  <nav class="mobile-nav">
+    <button class="mobile-nav-btn active" data-tab="tab-prices">
+      <span class="icon">⛽</span>
+      <span>ราคาน้ำมัน</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-calc">
+      <span class="icon">🧮</span>
+      <span>คำนวณ</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-monthly">
+      <span class="icon">📅</span>
+      <span>รายเดือน</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-logs">
+      <span class="icon">📋</span>
+      <span>ประวัติ</span>
+    </button>
+    <button class="mobile-nav-btn" data-tab="tab-analytics">
+      <span class="icon">📊</span>
+      <span>วิเคราะห์</span>
+    </button>
+  </nav>
+
+  <!-- Main Container -->
+  <main class="app-container">
+
+    <!-- Grand Hero KPI Section: Distinct Liters and Money Accumulator -->
+    <section class="hero-kpi-section">
+      <div class="kpi-grid">
+        <!-- KPI 1: Total Money Spent (แยกชัดเจน) -->
+        <div class="kpi-card card-money">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>💳</span> ยอดเงินค่าน้ำมันสะสม
+            </span>
+            <span class="kpi-badge">ยอดเงินรวม</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiTotalSpent">0.00</span>
+            <span class="kpi-unit">บาท</span>
+          </div>
+          <div class="kpi-subtext" id="kpiSpentSubtext">
+            <span>เฉลี่ย ฿0.00 / ครั้ง</span>
+          </div>
+        </div>
+
+        <!-- KPI 2: Total Liters Used (แยกชัดเจน) -->
+        <div class="kpi-card card-liters">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>🛢️</span> ปริมาณน้ำมันสะสม
+            </span>
+            <span class="kpi-badge">ลิตรสะสม</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiTotalLiters">0.000</span>
+            <span class="kpi-unit">ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="kpiLitersSubtext">
+            <span>เฉลี่ย 0.000 ลิตร / ครั้ง</span>
+          </div>
+        </div>
+
+        <!-- KPI 3: Average Unit Price -->
+        <div class="kpi-card card-avg">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>⚖️</span> ราคาเฉลี่ยต่อน้ำมัน
+            </span>
+            <span class="kpi-badge">บาท / ลิตร</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiAvgPrice">0.00</span>
+            <span class="kpi-unit">฿/ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="kpiAvgSubtext">
+            <span>คำนวณจากยอดสะสมจริง</span>
+          </div>
+        </div>
+
+        <!-- KPI 4: Total Fills & Distance -->
+        <div class="kpi-card card-stats">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>🚘</span> บันทึก & ประสิทธิภาพ
+            </span>
+            <span class="kpi-badge" id="kpiFillCountBadge">0 ครั้ง</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="kpiEfficiency">--</span>
+            <span class="kpi-unit" id="kpiEfficiencyUnit">กม./ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="kpiEfficiencySubtext">
+            <span>บันทึกเลขไมล์เพื่อดูอัตรากินน้ำมัน</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 1: REAL-TIME FUEL PRICES
+         ===================================================================== -->
+    <section class="view-section active" id="tab-prices">
+      <div class="section-intro">
+        <div>
+          <h2><span>⛽</span> ราคาน้ำมันเรียลไทม์วันนี้ในประเทศไทย</h2>
+          <p>อ้างอิงตรงตาม สนพ. (สำนักงานนโยบายและแผนพลังงาน กระทรวงพลังงาน) และผู้ค้าน้ำมันหลักในไทย แม่นยำ 100% เรียลไทม์</p>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: right;" id="priceLastUpdatedBanner">
+          อัปเดต: กำลังตรวจสอบ...
+        </div>
+      </div>
+
+      <!-- Station Selector Pills -->
+      <div class="station-pills-scroll" id="stationPillsContainer">
+        <button class="station-pill-btn active" data-station="all">
+          <span class="pill-dot" style="background-color: #38bdf8;"></span>
+          <span>เปรียบเทียบทุกปั๊ม</span>
+        </button>
+        <button class="station-pill-btn" data-station="ptt">
+          <span class="pill-dot" style="background-color: #0066b2;"></span>
+          <span>PTT Station</span>
+        </button>
+        <button class="station-pill-btn" data-station="bcp">
+          <span class="pill-dot" style="background-color: #00a651;"></span>
+          <span>บางจาก (BCP)</span>
+        </button>
+        <button class="station-pill-btn" data-station="shell">
+          <span class="pill-dot" style="background-color: #ffcc00;"></span>
+          <span>เชลล์ (Shell)</span>
+        </button>
+        <button class="station-pill-btn" data-station="pt">
+          <span class="pill-dot" style="background-color: #00843d;"></span>
+          <span>พีที (PT)</span>
+        </button>
+        <button class="station-pill-btn" data-station="caltex">
+          <span class="pill-dot" style="background-color: #00838f;"></span>
+          <span>คาลเท็กซ์ (Caltex)</span>
+        </button>
+        <button class="station-pill-btn" data-station="susco">
+          <span class="pill-dot" style="background-color: #f59e0b;"></span>
+          <span>ซัสโก้ (Susco)</span>
+        </button>
+      </div>
+
+      <!-- Fuel Category Filters -->
+      <div class="filter-bar">
+        <div class="category-tags" id="fuelCategoryFilterTags">
+          <button class="tag-btn active" data-cat="all">ทั้งหมดทุกชนิดน้ำมัน</button>
+          <button class="tag-btn" data-cat="gasohol">แก๊สโซฮอล์ (95, 91, E20, E85)</button>
+          <button class="tag-btn" data-cat="diesel">ดีเซล (B7, B20, ซุปเปอร์ดีเซล)</button>
+          <button class="tag-btn" data-cat="premium">เกรดพรีเมียม / ซุปเปอร์</button>
+          <button class="tag-btn" data-cat="benzine">เบนซิน 95</button>
+          <button class="tag-btn" data-cat="gas">ก๊าซ NGV</button>
+        </div>
+      </div>
+
+      <!-- Station Single View (Cards Grid) -->
+      <div id="stationCardView" style="display: none;">
+        <div class="fuel-cards-grid" id="fuelCardsGrid">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- All Stations Comparison Matrix Table -->
+      <div id="stationMatrixView">
+        <div class="matrix-container">
+          <table class="matrix-table" id="comparisonMatrixTable">
+            <thead>
+              <tr>
+                <th>ชนิดน้ำมัน</th>
+                <th>PTT</th>
+                <th>บางจาก</th>
+                <th>เชลล์</th>
+                <th>พีที</th>
+                <th>คาลเท็กซ์</th>
+                <th>ซัสโก้</th>
+                <th>คำนวณ</th>
+              </tr>
+            </thead>
+            <tbody id="matrixTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 2: SMART REAL-TIME CALCULATOR
+         ===================================================================== -->
+    <section class="view-section" id="tab-calc">
+      <div class="section-intro">
+        <div>
+          <h2><span>🧮</span> ระบบคำนวณค่าน้ำมันและจำนวนลิตรอัตโนมัติ</h2>
+          <p>คำนวณแม่นยำแบบเรียลไทม์ พร้อมบันทึกลงระบบประวัติเพื่อสะสมลิตรและเงินที่จ่ายไปได้ทันที</p>
+        </div>
+      </div>
+
+      <div class="calc-wrapper">
+        <!-- Main Calculator Card -->
+        <div class="calc-main-card">
+          <!-- Mode Switcher -->
+          <div class="calc-mode-switcher">
+            <button class="mode-btn active" id="btnModeMoneyToLiters">
+              <span>💰</span> ใส่จำนวนเงิน ➔ คิดจำนวนลิตร
+            </button>
+            <button class="mode-btn" id="btnModeLitersToMoney">
+              <span>🛢️</span> ใส่จำนวนลิตร ➔ คิดจำนวนเงิน
+            </button>
+            <button class="mode-btn" id="btnModeFullTank">
+              <span>⛽</span> คำนวณเติมเต็มถัง
+            </button>
+          </div>
+
+          <!-- Selectors: Station & Fuel Type -->
+          <div class="calc-selectors-row">
+            <div class="form-group">
+              <label for="calcStationSelect">เลือกปั๊มน้ำมัน</label>
+              <select id="calcStationSelect" class="form-control">
+                <option value="ptt">PTT Station (ปตท.)</option>
+                <option value="bcp">บางจาก (BCP)</option>
+                <option value="shell">เชลล์ (Shell)</option>
+                <option value="pt">พีที (PT Station)</option>
+                <option value="caltex">คาลเท็กซ์ (Caltex)</option>
+                <option value="susco">ซัสโก้ (Susco)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="calcFuelTypeSelect">เลือกชนิดน้ำมัน</label>
+              <select id="calcFuelTypeSelect" class="form-control">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Active Price Banner -->
+          <div class="active-price-banner">
+            <div>
+              <span style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">ราคาน้ำมันแบบเรียลไทม์ขณะนี้</span>
+              <div class="banner-fuel-title" id="bannerFuelTitle">แก๊สโซฮอล์ 95 (PTT)</div>
+            </div>
+            <div class="banner-price-val">
+              <span id="bannerPriceValue">38.14</span>
+              <span style="font-size: 0.85rem; color: var(--text-secondary); font-family: var(--font-sans);">บาท/ลิตร</span>
+            </div>
+          </div>
+
+          <!-- Mode 1: Money to Liters Input -->
+          <div id="inputGroupMoneyToLiters">
+            <div class="form-group">
+              <label for="inputMoneyAmount">ระบุจำนวนเงินที่ต้องการเติม (บาท)</label>
+              <div class="calc-input-box">
+                <input type="number" id="inputMoneyAmount" class="huge-input" placeholder="0" value="1000" min="1" step="any">
+                <span class="input-suffix">บาท</span>
+              </div>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="presets-grid">
+              <button class="preset-chip" data-amount="300">+300 ฿</button>
+              <button class="preset-chip" data-amount="500">+500 ฿</button>
+              <button class="preset-chip" data-amount="800">+800 ฿</button>
+              <button class="preset-chip" data-amount="1000">+1,000 ฿</button>
+              <button class="preset-chip" data-amount="1200">+1,200 ฿</button>
+              <button class="preset-chip" data-amount="1500">+1,500 ฿</button>
+              <button class="preset-chip" data-amount="2000">+2,000 ฿</button>
+            </div>
+          </div>
+
+          <!-- Mode 2: Liters to Money Input (Hidden by default) -->
+          <div id="inputGroupLitersToMoney" style="display: none;">
+            <div class="form-group">
+              <label for="inputLitersAmount">ระบุจำนวนลิตรที่ต้องการเติม (ลิตร)</label>
+              <div class="calc-input-box">
+                <input type="number" id="inputLitersAmount" class="huge-input" placeholder="0" value="25" min="0.1" step="any">
+                <span class="input-suffix">ลิตร</span>
+              </div>
+            </div>
+
+            <div class="presets-grid">
+              <button class="preset-chip" data-liters="10">+10 ลิตร</button>
+              <button class="preset-chip" data-liters="20">+20 ลิตร</button>
+              <button class="preset-chip" data-liters="30">+30 ลิตร</button>
+              <button class="preset-chip" data-liters="40">+40 ลิตร</button>
+              <button class="preset-chip" data-liters="50">+50 ลิตร</button>
+            </div>
+          </div>
+
+          <!-- Mode 3: Full Tank Calculator (Hidden by default) -->
+          <div id="inputGroupFullTank" style="display: none;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+              <div class="form-group">
+                <label for="tankCapacityInput">ความจุถังน้ำมันรถของคุณ (ลิตร)</label>
+                <input type="number" id="tankCapacityInput" class="form-control" value="50" min="10" max="150">
+              </div>
+              <div class="form-group">
+                <label for="fuelGaugeSelect">เกจ์น้ำมันปัจจุบันที่เหลือ</label>
+                <select id="fuelGaugeSelect" class="form-control">
+                  <option value="0">เกือบหมดถัง (เหลือ 0%)</option>
+                  <option value="0.125">ไฟเตือนน้ำมันขึ้น (เหลือ ~1/8 ถัง)</option>
+                  <option value="0.25" selected>เหลือ 1/4 ถัง (25%)</option>
+                  <option value="0.5">เหลือครึ่งถัง (50%)</option>
+                  <option value="0.75">เหลือ 3/4 ถัง (75%)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calculation Result Hero Display -->
+          <div class="calc-result-hero">
+            <div class="result-hero-label" id="resultHeroLabel">จำนวนลิตรน้ำมันที่จะได้รับโดยอัตโนมัติ</div>
+            <div class="result-hero-number-row">
+              <span class="result-hero-number" id="resultHeroMainNumber">26.219</span>
+              <span class="result-hero-unit" id="resultHeroUnit">ลิตร (L)</span>
+            </div>
+            <div class="result-formula-text" id="resultFormulaText">
+              สูตรคิด: 1,000.00 บาท ÷ 38.14 บาท/ลิตร = 26.219 ลิตร
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Save Details to Accumulator Log -->
+        <div class="calc-save-card">
+          <div class="save-card-title">
+            <span>💾</span> บันทึกเข้าสู่ระบบสะสมทันที
+          </div>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 16px;">
+            เมื่อกดบันทึก ระบบจะนำยอดเงินและจำนวนลิตรนี้ไปสะสมในแดชบอร์ดอย่างแม่นยำและแยกจากกันอย่างชัดเจน
+          </p>
+
+          <form id="formSaveToLog">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="saveDateTime">วันที่และเวลาที่เติม</label>
+              <input type="datetime-local" id="saveDateTime" class="form-control" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="saveVehicle">ชื่อรถ / ทะเบียนรถ (ระบุเพื่อแยกคัน)</label>
+              <input type="text" id="saveVehicle" class="form-control" placeholder="เช่น กข-9999 กทม. หรือ รถเก๋ง">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="saveOdometer">เลขไมล์ปัจจุบัน (กม.) [ถ้ามี เพื่อคิด กม./ลิตร]</label>
+              <input type="number" id="saveOdometer" class="form-control" placeholder="เช่น 45200">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="saveNotes">หมายเหตุเพิ่มเติม</label>
+              <input type="text" id="saveNotes" class="form-control" placeholder="เช่น เติมเดินทางไปทำงาน, ลมยาง 32">
+            </div>
+
+            <div style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="saveIsFullTank" checked style="width: 16px; height: 16px; accent-color: var(--accent-cyan);">
+              <label for="saveIsFullTank" style="font-size: 0.85rem; color: var(--text-primary); cursor: pointer; margin-bottom: 0;">
+                เป็นการเติมแบบเต็มถัง (Full Tank)
+              </label>
+            </div>
+
+            <div class="sheets-sync-toggle-row" style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+              <input type="checkbox" id="saveAutoSyncSheets" checked style="width: 16px; height: 16px; accent-color: #10b981;">
+              <label for="saveAutoSyncSheets" style="font-size: 0.85rem; color: var(--text-primary); cursor: pointer; margin-bottom: 0;">
+                📊 ซิงค์ลง Google Sheets อัตโนมัติทันที
+              </label>
+            </div>
+
+            <button type="submit" class="btn-primary-save" id="btnSubmitSaveLog">
+              <span>💾</span> บันทึกลงระบบสะสมและประวัติ
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW: MONTHLY ACCUMULATOR (สรุปแยกการใช้น้ำมันและยอดเงินรายเดือน)
+         ===================================================================== -->
+    <section class="view-section" id="tab-monthly">
+      <div class="section-intro">
+        <div>
+          <h2><span>📅</span> บันทึกและสรุปแยกการใช้น้ำมันและยอดเงินรายเดือน</h2>
+          <p>แสดงยอดเงินรวมค่าน้ำมัน (บาท) และปริมาณการใช้น้ำมัน (ลิตร) แยกชัดเจนในแต่ละเดือน พร้อมเปรียบเทียบการเปลี่ยนแปลง</p>
+        </div>
+      </div>
+
+      <!-- Month Selector Bar -->
+      <div class="monthly-selector-box">
+        <label class="monthly-selector-label">เลือกเดือนที่ต้องการดูข้อมูล:</label>
+        <div class="month-chips-scroll" id="monthChipsContainer">
+          <!-- Dynamically populated month chips -->
+        </div>
+      </div>
+
+      <!-- Monthly Grand KPI Highlights (แยกเงินและลิตรในเดือนที่เลือกอย่างชัดเจน) -->
+      <div class="kpi-grid monthly-kpi-grid" style="margin-bottom: 20px;">
+        <!-- Monthly Money -->
+        <div class="kpi-card card-money">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>💳</span> ยอดเงินค่าน้ำมันประจำเดือน
+            </span>
+            <span class="kpi-badge" id="selectedMonthBadgeMoney">เดือนนี้</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyTotalSpent">0.00</span>
+            <span class="kpi-unit">บาท</span>
+          </div>
+          <div class="kpi-subtext" id="monthlySpentDiff">
+            <span>เทียบเดือนก่อนหน้า: -</span>
+          </div>
+        </div>
+
+        <!-- Monthly Liters -->
+        <div class="kpi-card card-liters">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>🛢️</span> ปริมาณน้ำมันที่ใช้ประจำเดือน
+            </span>
+            <span class="kpi-badge" id="selectedMonthBadgeLiters">เดือนนี้</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyTotalLiters">0.000</span>
+            <span class="kpi-unit">ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="monthlyLitersDiff">
+            <span>เทียบเดือนก่อนหน้า: -</span>
+          </div>
+        </div>
+
+        <!-- Monthly Avg Price & Fills -->
+        <div class="kpi-card card-avg">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>⚖️</span> ราคาเฉลี่ยในเดือนนี้
+            </span>
+            <span class="kpi-badge">฿/ลิตร</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyAvgPrice">0.00</span>
+            <span class="kpi-unit">฿/ลิตร</span>
+          </div>
+          <div class="kpi-subtext" id="monthlyAvgSubtext">
+            <span>คิดจากยอดเงินและลิตรจริง</span>
+          </div>
+        </div>
+
+        <!-- Monthly Fill Count -->
+        <div class="kpi-card card-stats">
+          <div class="kpi-header">
+            <span class="kpi-title">
+              <span>⛽</span> ความถี่การเติมประจำเดือน
+            </span>
+            <span class="kpi-badge" id="monthlyFillCountBadge">0 ครั้ง</span>
+          </div>
+          <div class="kpi-value-row">
+            <span class="kpi-value" id="monthlyAvgPerFill">0.00</span>
+            <span class="kpi-unit">฿/ครั้ง</span>
+          </div>
+          <div class="kpi-subtext" id="monthlyFillSubtext">
+            <span>เฉลี่ย 0.00 ลิตร/ครั้ง</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly Fuel Breakdown (สัดส่วนน้ำมันที่เติมในเดือนนี้) -->
+      <div class="breakdown-grid" style="margin-top: 0; margin-bottom: 24px;">
+        <div class="breakdown-card">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">
+            <span>🛢️</span> สัดส่วนชนิดน้ำมันที่เติมในเดือนที่เลือก
+          </h3>
+          <div class="progress-list" id="monthlyFuelBreakdownList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+        <div class="breakdown-card">
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">
+            <span>⛽</span> ปั๊มน้ำมันที่เข้าใช้บริการในเดือนที่เลือก
+          </h3>
+          <div class="progress-list" id="monthlyStationBreakdownList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+
+      <!-- All-Months Comparison Table (สรุปเปรียบเทียบทุกเดือนย้อนหลัง) -->
+      <div class="logs-card" style="margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
+            <span>📊</span> ตารางสรุปแยกยอดเงินและปริมาณลิตรทุกเดือน
+          </h3>
+        </div>
+
+        <div class="data-table-responsive">
+          <table class="logs-table" id="allMonthsTable">
+            <thead>
+              <tr>
+                <th>ประจำเดือน</th>
+                <th>ยอดเงินรวม (บาท)</th>
+                <th>ปริมาณรวม (ลิตร)</th>
+                <th>ราคาเฉลี่ย</th>
+                <th>จำนวนครั้ง</th>
+                <th>เฉลี่ยต่อครั้ง</th>
+                <th>เปรียบเทียบเดือนก่อน</th>
+              </tr>
+            </thead>
+            <tbody id="allMonthsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Monthly Cards -->
+        <div class="mobile-logs-list" id="mobileMonthlyCardsList">
+          <!-- Dynamically populated for mobile -->
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 3: ACCUMULATION & FUEL LOGS
+         ===================================================================== -->
+    <section class="view-section" id="tab-logs">
+      <div class="section-intro">
+        <div>
+          <h2><span>📋</span> ประวัติการเติมน้ำมัน & ระบบสะสมสถิติ</h2>
+          <p>แสดงยอดเงินสะสมและจำนวนลิตรที่ใช้ไปอย่างชัดเจน พร้อมระบบซิงค์ข้อมูลตรงกันทุกอุปกรณ์</p>
+        </div>
+        <div class="device-sync-pill" id="deviceSyncStatusPill">
+          <span class="device-sync-dot"></span>
+          <span id="deviceSyncStatusText">กำลังเชื่อมต่อซิงค์ มือถือ ↔ คอม...</span>
+        </div>
+      </div>
+
+      <div class="logs-card">
+        <!-- Toolbar -->
+        <div class="logs-toolbar">
+          <div class="logs-filters">
+            <select id="logPeriodFilter" class="filter-select">
+              <option value="all">ช่วงเวลา: ทั้งหมด</option>
+              <option value="this_month">เดือนนี้</option>
+              <option value="last_month">เดือนก่อน</option>
+              <option value="this_year">ปีนี้</option>
+            </select>
+
+            <select id="logStationFilter" class="filter-select">
+              <option value="all">ปั๊ม: ทั้งหมด</option>
+              <option value="ptt">PTT</option>
+              <option value="bcp">บางจาก</option>
+              <option value="shell">เชลล์</option>
+              <option value="pt">พีที</option>
+              <option value="caltex">คาลเท็กซ์</option>
+              <option value="susco">ซัสโก้</option>
+            </select>
+
+            <select id="logFuelFilter" class="filter-select">
+              <option value="all">ชนิดน้ำมัน: ทั้งหมด</option>
+              <option value="gasohol_95">แก๊สโซฮอล์ 95</option>
+              <option value="gasohol_91">แก๊สโซฮอล์ 91</option>
+              <option value="gasohol_e20">แก๊สโซฮอล์ E20</option>
+              <option value="gasohol_e85">แก๊สโซฮอล์ E85</option>
+              <option value="benzine">เบนซิน 95</option>
+              <option value="diesel_b7">ดีเซล B7</option>
+              <option value="diesel_b20">ดีเซล B20</option>
+              <option value="premium_diesel">ซุปเปอร์ดีเซล (พรีเมียม B7)</option>
+              <option value="diesel">ดีเซลธรรมดา</option>
+              <option value="premium_gasohol_95">พรีเมียม แก๊สโซฮอล์ 95</option>
+              <option value="ngv">ก๊าซ NGV</option>
+            </select>
+          </div>
+
+          <div class="logs-action-btns">
+            <button class="btn-secondary btn-sheets-sync" id="btnOpenSheetsModal" title="เชื่อมต่อและจัดเก็บข้อมูลใน Google Sheets">
+              <span>📊</span> Google Sheets
+              <span class="sheets-status-dot" id="sheetsStatusDot"></span>
+            </button>
+            <button class="btn-secondary" id="btnQuickSyncSheets" title="ซิงค์ประวัติทั้งหมดไปยัง Google Sheets ทันที">
+              <span id="quickSyncIcon">⚡</span> ซิงค์ไป Sheets
+            </button>
+            <button class="btn-secondary" id="btnExportCSV" title="ดาวน์โหลดไฟล์ Excel/CSV">
+              <span>📥</span> ส่งออก CSV
+            </button>
+            <button class="btn-secondary" id="btnExportJSON" title="สำรองข้อมูล JSON">
+              <span>💾</span> สำรองข้อมูล
+            </button>
+            <label class="btn-secondary" style="cursor: pointer;" title="กู้คืนข้อมูลสำรอง">
+              <span>📤</span> นำเข้า JSON
+              <input type="file" id="inputImportJSON" accept=".json" style="display: none;">
+            </label>
+            <button class="btn-secondary" id="btnLoadSample" title="โหลดข้อมูลจำลองเพื่อทดลองใช้งาน">
+              <span>🧪</span> ตัวอย่าง
+            </button>
+            <button class="btn-secondary" id="btnClearLogs" title="ล้างประวัติทั้งหมด" style="color: #fb7185;">
+              <span>🗑️</span> ล้าง
+            </button>
+          </div>
+        </div>
+
+        <!-- Desktop Data Table -->
+        <div class="data-table-responsive">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>วันที่ / เวลา</th>
+                <th>ปั๊มน้ำมัน</th>
+                <th>ชนิดน้ำมัน</th>
+                <th>ราคา/ลิตร</th>
+                <th>จำนวนเงิน (บาท)</th>
+                <th>ปริมาณ (ลิตร)</th>
+                <th>เลขไมล์ (กม.)</th>
+                <th>รถ/ทะเบียน</th>
+                <th>จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="logsTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Card List View -->
+        <div class="mobile-logs-list" id="mobileLogsList">
+          <!-- Dynamically populated for small screens -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="logsEmptyState" class="empty-state" style="display: none;">
+          <div class="empty-state-icon">📝</div>
+          <h4>ยังไม่มีบันทึกการเติมน้ำมัน</h4>
+          <p>คุณสามารถใช้เครื่องคำนวณเพื่อบันทึกรายการแรก หรือคลิกปุ่ม "ตัวอย่าง" ด้านบนเพื่อดูข้อมูลสาธิต</p>
+          <button class="btn-secondary" id="btnEmptyAddSample">
+            <span>🧪</span> เพิ่มข้อมูลตัวอย่างทดสอบ
+          </button>
+        </div>
+      </div>
+
+      <!-- Accumulation Breakdown Section (แยกตามชนิดน้ำมันและตามปั๊ม) -->
+      <div class="breakdown-grid">
+        <!-- Breakdown by Fuel Type -->
+        <div class="breakdown-card">
+          <h3><span>🛢️</span> สรุปสะสมแยกตามชนิดน้ำมัน</h3>
+          <div class="progress-list" id="fuelTypeBreakdownList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Breakdown by Station -->
+        <div class="breakdown-card">
+          <h3><span>⛽</span> สรุปสะสมแยกตามปั๊มน้ำมัน</h3>
+          <div class="progress-list" id="stationBreakdownList">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =====================================================================
+         VIEW 4: ANALYTICS & CHARTS
+         ===================================================================== -->
+    <section class="view-section" id="tab-analytics">
+      <div class="section-intro">
+        <div>
+          <h2><span>📊</span> รายงานและกราฟวิเคราะห์แนวโน้มการใช้น้ำมัน</h2>
+          <p>วิเคราะห์พฤติกรรมการเติม เปรียบเทียบค่าใช้จ่ายรายเดือน และสัดส่วนการใช้น้ำมัน</p>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <!-- Monthly Spending & Volume Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">แนวโน้มค่าใช้จ่าย (บาท) และปริมาณน้ำมัน (ลิตร) รายเดือน</div>
+          </div>
+          <div class="chart-canvas-wrapper">
+            <canvas id="monthlyTrendChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Fuel Share Doughnut Chart -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">สัดส่วนชนิดน้ำมันที่เติมมากที่สุด</div>
+          </div>
+          <div class="chart-canvas-wrapper">
+            <canvas id="fuelShareChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Edit Price Modal Dialog -->
+  <div class="modal-overlay" id="editPriceModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="editPriceModalTitle">ปรับแต่งราคาน้ำมันเฉพาะพื้นที่</h3>
+        <button class="btn-modal-close" id="btnCloseEditPriceModal">&times;</button>
+      </div>
+      <form id="formEditPrice">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label>ปั๊มและชนิดน้ำมัน</label>
+          <input type="text" id="editPriceItemName" class="form-control" disabled style="opacity: 0.8;">
+        </div>
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label for="editPriceValue">ราคาต่อลิตรใหม่ (บาท)</label>
+          <input type="number" id="editPriceValue" class="form-control" step="0.01" min="0.1" required>
+          <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+            มีประโยชน์เมื่อเติมน้ำมันในต่างจังหวัดที่มีค่าขนส่งเพิ่มเติม
+          </small>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn-secondary" id="btnCancelEditPrice">ยกเลิก</button>
+          <button type="submit" class="btn-primary-save" style="width: auto; padding: 8px 18px; margin-top: 0;">บันทึกราคาใหม่</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Google Sheets Integration Modal Dialog -->
+  <div class="modal-overlay" id="googleSheetsModal">
+    <div class="modal-box modal-box-large">
+      <div class="modal-header">
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <span>📊</span> จัดเก็บข้อมูลผ่าน Google Sheets
+        </h3>
+        <button class="btn-modal-close" id="btnCloseSheetsModal">&times;</button>
+      </div>
+      
+      <!-- Sheets Status Banner -->
+      <div class="sheets-status-banner" id="sheetsStatusBanner">
+        <div class="sheets-status-left">
+          <span class="status-indicator-circle" id="bannerStatusCircle"></span>
+          <div>
+            <div class="sheets-status-title" id="bannerStatusTitle">สถานะ: ยังไม่ได้เชื่อมต่อ Google Sheets</div>
+            <div class="sheets-status-sub" id="bannerStatusSub">ใส่ Webhook URL ด้านล่างเพื่อเริ่มการซิงค์ข้อมูลอัตโนมัติ</div>
+          </div>
+        </div>
+        <a href="#" target="_blank" rel="noopener noreferrer" class="btn-view-sheet" id="btnOpenGoogleSheetLink" style="display: none;">
+          <span>🔗</span> เปิด Google Sheets
+        </a>
+      </div>
+
+      <!-- Settings Form -->
+      <form id="formSheetsConfig">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="sheetsWebhookUrl">
+            Google Apps Script Web App URL (Webhook) <span style="color: #ef4444;">*</span>
+          </label>
+          <input type="url" id="sheetsWebhookUrl" class="form-control" placeholder="https://script.google.com/macros/s/.../exec" required>
+          <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+            ลิงก์ Web App ที่ได้จากการกด "ทำให้ใช้งานได้ (Deploy) > การทดลองใช้งานเว็บแอป (Web App)" ใน Google Sheets
+          </small>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="sheetsDocUrl">
+            ลิงก์เปิด Google Sheets ของคุณ (ใส่เพื่อคลิกเปิดดูตารางได้สะดวก)
+          </label>
+          <input type="url" id="sheetsDocUrl" class="form-control" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+        </div>
+
+        <div style="margin-bottom: 18px; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="sheetsAutoSyncCheck" checked style="width: 16px; height: 16px; accent-color: #10b981;">
+          <label for="sheetsAutoSyncCheck" style="font-size: 0.85rem; color: var(--text-primary); cursor: pointer; margin-bottom: 0;">
+            ซิงค์ลง Google Sheets อัตโนมัติทุกครั้งเมื่อกดบันทึกการเติมน้ำมัน
+          </label>
+        </div>
+
+        <!-- Action Buttons Grid -->
+        <div class="sheets-action-row">
+          <button type="submit" class="btn-sheets-action btn-save-sheets">
+            <span>💾</span> บันทึกการตั้งค่า
+          </button>
+          <button type="button" class="btn-sheets-action btn-test-sheets" id="btnTestSheetsConnection">
+            <span id="testIcon">🔌</span> ทดสอบการเชื่อมต่อ
+          </button>
+          <button type="button" class="btn-sheets-action btn-sync-all-sheets" id="btnSyncAllToSheets">
+            <span id="syncAllIcon">🚀</span> ส่งขึ้น Sheets
+          </button>
+          <button type="button" class="btn-sheets-action btn-pull-sheets" id="btnPullFromSheets">
+            <span id="pullSheetsIcon">📥</span> ดึงจาก Sheets
+          </button>
+        </div>
+      </form>
+
+      <!-- Step-by-Step Tutorial & Copy Script -->
+      <div class="sheets-guide-card">
+        <div class="guide-header" id="btnToggleGuide">
+          <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.88rem;">
+            <span>📖</span> วิธีเชื่อมต่อ Google Sheets ใน 3 ขั้นตอนง่ายๆ
+          </div>
+          <span id="guideToggleArrow">▼</span>
+        </div>
+        <div class="guide-content" id="guideContent">
+          <ol class="guide-steps-list">
+            <li>เปิด <strong>Google Sheets</strong> แผ่นงานใหม่บน Google Drive ของคุณ</li>
+            <li>ไปที่เมนูด้านบน <strong>ส่วนขยาย (Extensions)</strong> &gt; <strong>Apps Script</strong></li>
+            <li>ลบโค้ดเดิมออกทั้งหมด แล้วคลิกปุ่ม <strong>"คัดลอกโค้ดสำเร็จรูป"</strong> ด้านล่างนี้ไปวาง</li>
+            <li>คลิกปุ่ม <strong>บันทึก (Save 💾)</strong> แล้วกด <strong>ทำให้ใช้งานได้ (Deploy)</strong> &gt; <strong>การทดลองใช้งานเว็บแอป (New deployment: Web App)</strong></li>
+            <li>ในช่อง <em>ใครมีสิทธิ์เข้าถึง (Who has access)</em> เลือก <strong>ทุกคน (Anyone)</strong> แล้วกด <strong>Deploy</strong></li>
+            <li>คัดลอก <strong>Web App URL</strong> นำมาวางในช่อง Webhook ด้านบน แล้วกด <strong>บันทึกการตั้งค่า</strong></li>
+          </ol>
+          <button type="button" class="btn-copy-script" id="btnCopyAppsScriptCode">
+            <span>📋</span> คัดลอกโค้ด Google Apps Script สำเร็จรูป (คลิกเดียว)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Script Modules -->
+  <script src="fuel-data.js"></script>
+  <script src="storage.js"></script>
+  <script src="google-sheets.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
